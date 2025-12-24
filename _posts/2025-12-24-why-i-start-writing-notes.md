@@ -16,9 +16,9 @@ This post marks the start of writing here. It will include some thoughts I have,
 First: I will keep this simple, focusing on seeing whether this is something I enjoy enough to do long-term. Therefore, I do not expect every post to be polished.
 
 For now I have 3 different types of posts in mind:
-- **"Learning Notes"**: Unstructured posts where I digest things that I recently learned.
-- **"Reading Notes"**: Comments on other blog posts, with my thoughts and comments on them.
-- **"General Posts"**: Essentially everything else that I might want to write about.
+- **"Learning"**: Unstructured posts where I digest things that I recently learned.
+- **"Comments"**: Comments on other blog posts, with my thoughts and comments on them.
+- **"Notes"**: Essentially everything else that I might want to write about.
 
 Secondly, I will focus on the topics of AI in all its forms, but mostly on LLMs. I am interested in all topics from end to end, e.g. model training, AI application building and engineering, agentic coding, AI adoption in companies, economic aspects, and so on and so on... Other topics that I am working on include software (and possible product) engineering, solution architecture and everything related to this. 
 
