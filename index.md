@@ -1,11 +1,8 @@
 ---
-layout: home
+layout: default
+title: About
 ---
 
-Hi, I’m an AI product engineer.
+I’m an AI product engineer working on applied ML systems.
 
-This site is a place for notes, experiments, and occasional writing about
-building AI-powered products.
-
-Links:
-- GitHub: https://github.com/ricu
+This site is a place for notes, experiments, and occasional writing.
