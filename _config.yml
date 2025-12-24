@@ -1,4 +1,11 @@
 title: Notes
 description: Personal notes on building AI products
-theme: null
+theme: minima
+
 markdown: kramdown
+
+header_pages:
+  - blog.md
+
+github_username: your-handle
+linkedin_username: your-handle
