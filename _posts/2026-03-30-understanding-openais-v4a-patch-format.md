@@ -38,7 +38,7 @@ A V4A patch consists of structured text instructions describing file-level modif
 
 > NOTE: In the image below, line number 6 contain a single space character and is not(!) empty.
 
-![V4A diff format visualization](../assets/images/v4a_diff.png)
+![V4A diff format visualization](/assets/images/v4a_diff.png)
 
 Core Structure
 - A **patch** is opened with `*** Begin Patch` and closed with `*** End Patch`.
@@ -80,7 +80,7 @@ An empty anchor (`@@`) signals a new section without adding additional matching 
 
 In the following image you can see an example, where a V4A patch is applied to a sample markdown text. Here, the `@@ ## App 1` anchor is used to disambiguate between the two `### Installation` lines. If the installation section for App 2 should have been modified, the anchor would had to be placed as close as necessary before the corresponding line to avoid ambiguity. The second anchor (just the `@@`) signals the beginning of a new section and therefore a repositioning in the text. Without it, we would have to include all the context between line 6 and 16. It can be used without an actual content for the anchor as there is no risk of ambiguity.
 
-![Sample application of a V4A patch](../assets/images/v4a_patch_apply.png)
+![Sample application of a V4A patch](/assets/images/v4a_patch_apply.png)
 
 ### Additional Rules and Constraints (Observed) 
 
