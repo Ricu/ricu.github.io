@@ -1,9 +1,15 @@
-# Understanding OpenAI's V4A Diff Format
+# Understanding OpenAI's V4A Patch Format
 
-OpenAI trains their models to use a prefered diff format called V4A, starting from GPT-4.1. To the best of my knowledge, they introduced it with the [GPT-4.1 Prompting Guide](https://developers.openai.com/cookbook/examples/gpt4-1_prompting_guide#apply-patch). Unfortunately, OpenAI has not published a general specification of the diff format (as of this writing). For that reason, I wanted to investigate it and understand it better.
+OpenAI trains its models to use a preferred diff format called **V4A**, introduced around GPT-4.1. While the format is referenced in official materials such as the [GPT-4.1 Prompting Guide](https://developers.openai.com/cookbook/examples/gpt4-1_prompting_guide#apply-patch), there is no complete public specification. This article reverse engineers the format based on available documentation and observed behavior.
 
-I have personally had difficulties getting the format to work reliably in my tests, especially in regards to getting the model to generate proper diffs and applying them reliably. This has lead me to investigate the format deeper to be able to troubleshoot the arising issues.
+I have personally had difficulties getting the format to work reliably in practice, both in terms of generating valid patches and applying them consistently. This led me to investigate the format more deeply in order to understand its underlying rules and failure modes.
 
+## Scope 
+
+This article focuses on: 
+- The structure of the V4A format 
+- How matching and application appear to work in practice 
+- Practical constraints and implicit rules that are not formally documented
 
 ## Sources
 
@@ -15,57 +21,54 @@ For the reason above, I opted to go for more recent information, expecting that 
 
 - The [Apply Patch | OpenAI API Docs](https://developers.openai.com/api/docs/guides/tools-apply-patch) for a general overview an reference.
 - The reference implementation for `apply_diff` found in the [Agents SDK Github](https://github.com/openai/openai-agents-python/blob/9f5575ada4e7852a182bbe76f4ec21bb6e88268c/src/agents/apply_diff.py).
-- An extracted `apply_patch` tool definition, using `gpt-5.1`
+- An extracted `apply_patch` tool definition, for `gpt-5.1`
 - Paraphrased system instructions from Codex on how to use the `apply_patch` tool.
 
 For the sake of readability, I included all of them at the end of this document in the [Appendix](#appendix).
 
 ## The V4A Format
 
-The following image shows a sample V4A patch.
+A V4A patch consists of structured text instructions describing file-level modifications.
 
-> NOTE: Line number 6 contain a single space character and is not empty.
+> NOTE: In the image below, line number 6 contain a single space character and is not(!) empty.
 
 ![V4A diff format visualization](./v4a_diff.png)
 
+Core Structure
 - A **patch** is opened with `*** Begin Patch` and closed with `*** End Patch`.
-
 - A **patch** consists of one or more **hunks**.
-
 - A **hunk** represents a file-level operation and begins with:
   `*** Add File: <path>`
   `*** Update File: <path>`
   `*** Delete File: <path>`
-
 - A **hunk** contains either:
   - For Add: only added lines (`+`)
   - For Delete: no further content
   - For Update: a **diff**
 
+Diff Structure
 - A **diff** (only present in Update hunks) consists of one or more sections.
-
 - A **section** is introduced by an **anchor line** starting with `@@` or `@@ <anchor text>`. It defines a position in the file from which matching begins. There can be multiple anchor lines to refine the position in the text.
-
 - Each **section** contains a sequence of **change lines**:
   - Context lines: start with `" "` (space)
   - Deletions: start with `-`
   - Insertions: start with `+`
 
-- Internally, consecutive **change lines** are grouped into chunks:
-  - A chunk consists of adjacent `-` and `+` lines bounded by context lines.
 
 ### Context Matching
 
-The first anchor line (starting with `@@`) at the start of a diff or after change lines denotes that the following change lines should aim for a different seciton in text.
+The V4A format relies entirely on **content-based matching**, not line numbers.
 
-Anchor lines essentially work as follows:
-1. Positions (new section) or advances (nested anchors) the cursor at the position of the anchor line.
-2. Perform forward search for context matching and anchoring starting from the cursor.
-3. Optional: repeat 1&2 for nested anchor lines.
+**Observed process:** 
+1. The anchor line identifies a starting line for search. 
+2. Matching proceeds forward from that point.
+3. Optional: 1&2 are repeated for nested anchor lines.
+4. Context lines before and after changes are used to locate the exact position. 
+5. The change block is applied once a unique match is found.
 
-That also means that **anchor lines are language agnostic**.
+That means that **anchor lines are purely string based** and not semantic. There can be multple anchors to refine the search.
 
-The V4A format uses 1-3 context lines before and after the change lines for matching position.
+An empty anchor (`@@`) signals a new section without adding additional matching constraints.
 
 ### Example
 
@@ -73,11 +76,27 @@ In the following image you can see an example, where a V4A patch is applied to a
 
 ![Sample application of a V4A patch](v4a_patch_apply.png)
 
+### Additional Rules and Constraints (Observed) 
+
+The following rules are not formally documented but are consistently observed: 
+
+1. Sections should not modify overlapping regions of the file. Overlaps can lead to ambiguity or failed application.
+2. Each section should resolve to exactly one location in the file. If multiple matches are possible, behavior is undefined or unreliable. 
+3. Forward-Progressing Sections are applied sequentially, and matching proceeds forward through the file. This affects how anchors should be placed. 
+4. Whitespace is significant! Leading spaces determine line type (context vs change) and exact whitespace must match! For example, an empty line is ignored while a line with a single space character is counted as a context line.
+
 ## Insights
 
-One thing that I found interesting is, the addition of the grammar section to the tool schema definition (compare the one in the appendix with the one from the [GPT-4.1 Prompting Guide](https://developers.openai.com/cookbook/examples/gpt4-1_prompting_guide#apply-patch)). You can also see that the Codex System Prompt specifically instructs the model to obey this grammar.
 
-To me, that signals that OpenAI noticed that the models struggled to reliably output valid V4A diffs. This also aligns with my observation when testing out the originally proposed tool definition. I suspect this difficulty comes from the V4A format being new enough s.t. the models have not had enough training data to itnernalize the structure yet. At the same time, it is similar enough to existing diff formats to possibly confuse the model (e.g. similarity to unified diffs).
+One notable evolution in recent tool definitions is the addition of a **formal grammar constraint** for V4A patches. This suggests that earlier model versions struggled to reliably produce valid diffs. 
+
+ 
+
+One notable evolution is the addition of the grammar section to the tool schema definition (compare the one in the appendix with the one from the [GPT-4.1 Prompting Guide](https://developers.openai.com/cookbook/examples/gpt4-1_prompting_guide#apply-patch)). You can also see that the Codex System Prompt specifically instructs the model to obey this grammar.
+
+The introduction of grammar constraints appears to be an attempt to enforce structural correctness at generation time. To me, that signals that OpenAI themselves noticed that the models struggled to reliably output valid V4A patches.
+
+I suspect this difficulty comes from the V4A format being new enough s.t. the models have not had enough training data to itnernalize the structure yet. At the same time, it is similar enough to existing diff formats to possibly confuse the model (e.g. similarity to unified diffs).
 
 ## Appendix
 
