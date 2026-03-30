@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Understanding OpenAI's V4A Patch Format"
-date:   2026-03-30 19:28:18 +0100
+date:   2026-03-30 19:28:18 +0200
 categories: notes
 ---
 # Understanding OpenAI's V4A Patch Format
