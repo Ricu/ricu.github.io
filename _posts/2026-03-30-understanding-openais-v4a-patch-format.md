@@ -1,3 +1,9 @@
+---
+layout: post
+title:  "Understanding OpenAI's V4A Patch Format"
+date:   2026-03-30 19:28:18 +0100
+categories: notes
+---
 # Understanding OpenAI's V4A Patch Format
 
 OpenAI trains its models to use a preferred diff format called **V4A**, introduced around GPT-4.1. While the format is referenced in official materials such as the [GPT-4.1 Prompting Guide](https://developers.openai.com/cookbook/examples/gpt4-1_prompting_guide#apply-patch), there is no complete public specification. This article reverse engineers the format based on available documentation and observed behavior.
